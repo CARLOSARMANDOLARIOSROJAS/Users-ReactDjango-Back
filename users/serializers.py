@@ -4,24 +4,25 @@ from django.contrib.auth.hashers import make_password
 from .models import User
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'age', 'password']
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+        fields = ['id', 'username', 'email', 'age']
+        # Removemos password de los campos principales ya que es opcional
     
     def create(self, validated_data):
-        # Hash de la contraseña antes de guardar
-        validated_data['password'] = make_password(validated_data['password'])
+            # Opción 2: O puedes eliminar el campo password completamente
+        validated_data.pop('password', None)
         return super().create(validated_data)
     
     def update(self, instance, validated_data):
-        # Si se actualiza la contraseña, hacer hash
-        if 'password' in validated_data:
+        # Solo hacer hash si se proporciona una contraseña y no está vacía
+        if 'password' in validated_data and validated_data['password']:
             validated_data['password'] = make_password(validated_data['password'])
+        elif 'password' in validated_data and not validated_data['password']:
+            # Si password está vacío, no lo actualizamos
+            validated_data.pop('password')
+        
         return super().update(instance, validated_data)
     
     def validate_username(self, value):
